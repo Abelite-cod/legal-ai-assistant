@@ -1,147 +1,235 @@
-# Gemini PDF RAG System
+# ⚖️ Legal AI Assistant (RAG + Gemini)
 
-This project is a Retrieval-Augmented Generation (RAG) system built with Python, LangChain, and Google's Gemini model.
-
-The goal of the project is to allow users ask questions about a PDF document and receive accurate answers based strictly on the content of that document.
-
-Instead of the AI making things up, the system retrieves relevant sections from the document and uses them as context for the answer.
-
-I built this to explore how modern AI assistants work internally and to learn how production-level RAG pipelines are designed.
+A conversational AI-powered legal assistant that helps users understand legal situations, analyze documents, and get practical guidance using Retrieval-Augmented Generation (RAG) and Google Gemini.
 
 ---
 
-## How it works
+## 🚀 Overview
 
-The pipeline follows these steps:
+This project is a full-stack AI system that combines:
 
-1. Load a PDF document
-2. Split the document into smaller chunks
-3. Convert each chunk into embeddings
-4. Store the embeddings inside a Chroma vector database
-5. Retrieve relevant chunks when a user asks a question
-6. Send the retrieved context to Gemini to generate the final answer
+- Conversational AI (chat-based interface)
+- Legal reasoning engine
+- Document analysis (PDF support)
+- Retrieval-Augmented Generation (RAG)
+- Multi-session chat system
 
-This ensures answers stay grounded in the source document.
+Users can:
+
+- Ask legal questions in plain English
+- Upload documents and query them
+- Maintain multiple chat sessions
+- Receive contextual, structured legal guidance
 
 ---
 
-## Tech Stack
+## 🧠 Core Features
 
-- Python
+### 💬 Conversational AI
+
+- Natural chat interface
+- Intent detection (greeting, legal question, document query, etc.)
+- Context-aware responses using conversation history
+
+### ⚖️ Legal Reasoning Engine
+
+- Empathetic and practical responses
+- Step-by-step guidance
+- Real-world scenario handling (e.g. wrongful termination)
+
+### 📄 RAG (Document Intelligence)
+
+- Upload PDF documents
+- Automatic chunking and embedding
+- Hybrid retrieval (semantic + keyword)
+- Context-grounded answers (no hallucination)
+
+### 🧩 Multi-Session Chat
+
+- Multiple chat threads
+- Persistent sessions (via frontend local storage)
+- Session-based API interaction
+
+### ⚡ Performance Optimizations
+
+- Context trimming
+- Response caching (LRU-style)
+- Efficient embedding model
+
+---
+
+## 🏗️ Tech Stack
+
+### Backend
+
+- FastAPI
 - LangChain
-- Google Gemini
-- HuggingFace Embeddings
-- Chroma Vector Database
+- Google Gemini (via `langchain_google_genai`)
+- Chroma Vector DB
+- HuggingFace Embeddings (`all-MiniLM-L6-v2`)
+
+### Frontend
+
+- HTML / CSS / JavaScript (custom UI)
+- LocalStorage (chat persistence)
+
+### Dev Tools
+
+- Uvicorn
+- Ngrok (for mobile testing)
+- Python Dotenv
 
 ---
 
-## Project Structure
+## 📂 Project Structure
 
-project/
-│
-├── rag_system.py
-├── requirements.txt
-├── README.md
-├── .env
-├── chroma_db/
-└── ITI_AgenticAI_Final.pdf
+```
+app/
+├── api/                 # FastAPI routes
+├── services/            # Core logic (RAG, reasoning, intent)
+├── storage/             # Vector DB + PDF storage
+├── models/              # DB models
+├── db/                  # Database setup
+└── main.py              # App entry point
+```
 
 ---
 
-## Installation
+## ⚙️ How It Works
 
-Clone the repository:
+### 1. User Input
 
-git clone https://github.com/Aelitecod/gemini-pdf-rag-system.git
+User sends a message via frontend.
 
-cd gemini-pdf-rag-system
+### 2. Intent Classification
 
-Install dependencies:
+System determines if it's:
 
+- Conversation
+- Legal reasoning
+- Document query
+
+### 3. Routing
+
+- Conversation → quick response
+- Legal → LLM reasoning
+- Document → RAG pipeline
+
+### 4. RAG Flow (if document query)
+
+- Retrieve relevant chunks
+- Build context
+- Send to LLM with strict prompt
+
+### 5. Response Processing
+
+- Normalize output
+- Remove formatting noise
+- Return clean response
+
+---
+
+## 🔧 Setup Instructions
+
+### 1. Clone Repo
+
+```bash
+git clone <your-repo-url>
+cd project
+```
+
+### 2. Create Virtual Environment
+
+```bash
+python -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
+```
+
+### 3. Install Dependencies
+
+```bash
 pip install -r requirements.txt
+```
 
----
+### 4. Environment Variables
 
-## Environment Variables
+Create `.env` file:
 
-Create a `.env` file and add your Google API key.
-
+```
 GOOGLE_API_KEY=your_api_key_here
+```
 
-You can get an API key from Google AI Studio.
+### 5. Run Backend
 
----
+```bash
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
 
-## Running the Project
+### 6. Test API
 
-Run the script:
+Open:
 
-python rag_system.py
-
-You will then be able to ask questions about the PDF in the terminal.
-
-Example:
-
-Your question: What is Agentic AI?
-
-The system will retrieve relevant sections from the document and generate an answer using Gemini.
+```
+http://localhost:8000/docs
+```
 
 ---
 
-## Features
+## 🌐 Frontend Usage
 
-- PDF document question answering
-- Retrieval-Augmented Generation pipeline
-- Query rewriting for better search
-- Context-limited prompting to avoid hallucinations
-- Source page references
+- Open the HTML file in browser
+- Or connect via ngrok for mobile testing
 
----
+Update API endpoint in JS:
 
-## Example Workflow
-
-User question:
-
-What is agentic AI architecture?
-
-Pipeline:
-
-User Question
-↓
-Query Rewriting
-↓
-Vector Search
-↓
-Context Builder
-↓
-Gemini LLM
-↓
-Answer + Sources
+```js
+const API_BASE = "https://your-ngrok-url";
+```
 
 ---
 
-## Why I Built This
+## 📱 Mobile Testing (Ngrok)
 
-I wanted to understand how modern AI assistants like ChatGPT use retrieval systems to ground their responses in real data.
+```bash
+ngrok http 8000
+```
 
-This project helped me learn about vector databases, embeddings, prompt design, and building AI pipelines with LangChain.
+Use generated URL in frontend.
 
 ---
 
-## Future Improvements
+## 🚧 Known Improvements
 
-Possible improvements include:
-
-- Hybrid search (vector + keyword search)
-- Reranking models for better retrieval
-- FastAPI backend for deployment
+- Better UI (React / Tailwind)
+- Authentication system
+- Persistent DB chat storage
+- File upload UI
 - Streaming responses
-- Multi-document support
+- Deployment (Vercel + Railway)
 
 ---
 
-## Author
+## 🎯 Future Roadmap
 
-Abel Okagbare
+- Convert to full web app
+- Add user accounts
+- Improve legal accuracy with fine-tuning
+- Mobile app (React Native)
 
-Computer Science graduate interested in AI systems, backend engineering, and building machine learning applications.
+---
+
+## ⚠️ Disclaimer
+
+This application is for informational purposes only and does not constitute legal advice.
+
+---
+
+## 👨‍💻 Author
+
+Built by a full-stack developer exploring AI-powered legal systems.
+
+---
+
+## ⭐ If you like this project
+
+Give it a star and share feedback!
