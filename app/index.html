@@ -109,22 +109,22 @@ body {
 }
 
 .new-chat-btn {
-  background: none;
-  border: 1px solid var(--border);
-  color: var(--text);
-  font-size: 18px;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  border: none;
+  color: white;
+  font-size: 13px;
+  font-weight: 600;
   cursor: pointer;
-  padding: 6px 10px;
-  border-radius: 8px;
-  line-height: 1;
+  padding: 8px 14px;
+  border-radius: 20px;
   display: flex;
   align-items: center;
-  justify-content: center;
-  min-width: 36px;
-  min-height: 36px;
+  gap: 5px;
+  white-space: nowrap;
   transition: 0.15s;
 }
-.new-chat-btn:hover { background: var(--surface2); }
+.new-chat-btn:hover { opacity: 0.9; }
+.new-chat-btn:active { transform: scale(0.96); }
 
 /* doc loaded indicator */
 .doc-pill {
@@ -654,7 +654,7 @@ body {
     </div>
     <div style="display:flex;align-items:center;gap:8px;">
       <span class="doc-pill" id="docPill">📄 Doc ready</span>
-      <button class="new-chat-btn" onclick="createNewChat()" title="New chat">✏️</button>
+      <button class="new-chat-btn" onclick="createNewChat()" title="New chat">✏️ New Chat</button>
     </div>
   </div>
 
