@@ -116,9 +116,10 @@ def handle_conversation(intent: str, question: str) -> Optional[str]:
 # -------------------------
 # LEGAL REASONING (CLEAN + NO REPETITION)
 # -------------------------
-def handle_legal_reasoning(llm, question: str, history: str = "") -> str:
+def handle_legal_reasoning(llm, question: str, history: str = "", jurisdiction: str = "General") -> str:
     today = _dt.date.today().strftime("%A, %B %d, %Y")
-    prompt = f"""You are a senior legal assistant. Today's date is {today}.
+    jurisdiction_note = f" Apply {jurisdiction} law and cite relevant {jurisdiction} legislation where applicable." if jurisdiction != "General" else ""
+    prompt = f"""You are a senior legal assistant. Today's date is {today}.{jurisdiction_note}
 
 Rules:
 - Be clear and structured with numbered steps where appropriate
@@ -260,11 +261,12 @@ class GeminiRAGService:
     async def ask_question(
         self,
         question: str,
-        history: List[Dict[str, str]] = None
+        history: List[Dict[str, str]] = None,
+        jurisdiction: str = "General"
     ) -> Dict[str, Any]:
 
         history = history or []
-        key = make_cache_key(question, history)
+        key = make_cache_key(question + jurisdiction, history)
 
         if key in self.cache:
             return self.cache[key]
@@ -296,7 +298,8 @@ class GeminiRAGService:
             answer = handle_legal_reasoning(
                 self.llm,
                 question,
-                conversation_text
+                conversation_text,
+                jurisdiction=jurisdiction
             )
 
             if not answer:
@@ -391,7 +394,8 @@ Question:
     async def ask_question_stream(
         self,
         question: str,
-        history: List[Dict[str, str]] = None
+        history: List[Dict[str, str]] = None,
+        jurisdiction: str = "General"
     ):
         """
         Async generator that yields text chunks for streaming responses.
@@ -412,13 +416,15 @@ Question:
 
         # Legal reasoning — stream via Gemini
         if intent in ["legal_question", "emotional_distress"]:
-            prompt = f"""You are a senior legal assistant.
+            today = _dt.date.today().strftime("%A, %B %d, %Y")
+            jurisdiction_note = f" Apply {jurisdiction} law and cite relevant {jurisdiction} legislation where applicable." if jurisdiction != "General" else ""
+            prompt = f"""You are a senior legal assistant. Today's date is {today}.{jurisdiction_note}
 
 Rules:
 - Be clear and structured
 - Use numbered lists where appropriate
 - Do not use markdown symbols (*, #)
-- Be concise
+- Be concise and practical
 
 Conversation:
 {conversation_text}

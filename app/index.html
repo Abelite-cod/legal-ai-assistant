@@ -581,6 +581,143 @@ body {
 .send-btn:active:not(:disabled) { transform: scale(0.92); }
 .send-btn:disabled { background: var(--surface2); color: var(--muted); cursor: not-allowed; }
 
+/* ── MODALS ──────────────────────────────── */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  z-index: 100;
+  align-items: flex-end;
+  justify-content: center;
+  backdrop-filter: blur(4px);
+}
+.modal-overlay.open { display: flex; }
+
+.modal {
+  background: #1a1a1a;
+  border: 1px solid var(--border);
+  border-radius: 20px 20px 0 0;
+  width: 100%;
+  max-width: 600px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  animation: slideUp 0.22s ease-out;
+  overflow: hidden;
+}
+
+.modal-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+.modal-title { font-size: 15px; font-weight: 700; color: var(--text); }
+
+.modal-close {
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 18px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+.modal-close:hover { color: var(--text); background: var(--surface2); }
+
+.modal-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 20px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.modal-footer {
+  padding: 12px 20px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.modal-btn {
+  flex: 1;
+  padding: 12px;
+  border-radius: 12px;
+  border: none;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.15s;
+}
+.modal-btn.primary { background: linear-gradient(135deg, var(--accent), var(--accent2)); color: white; }
+.modal-btn.secondary { background: var(--surface2); color: var(--text); }
+.modal-btn:hover { opacity: 0.9; }
+.modal-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* Risk cards */
+.risk-card {
+  padding: 12px 14px;
+  border-radius: 12px;
+  margin-bottom: 10px;
+  border-left: 4px solid;
+}
+.risk-card.HIGH { background: rgba(239,68,68,0.1); border-color: #ef4444; }
+.risk-card.MEDIUM { background: rgba(245,158,11,0.1); border-color: #f59e0b; }
+.risk-card.LOW { background: rgba(16,185,129,0.1); border-color: #10b981; }
+
+.risk-level {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 4px;
+}
+.risk-card.HIGH .risk-level { color: #ef4444; }
+.risk-card.MEDIUM .risk-level { color: #f59e0b; }
+.risk-card.LOW .risk-level { color: #10b981; }
+
+.risk-type { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+.risk-explanation { font-size: 13px; color: var(--muted); line-height: 1.5; }
+.risk-phrase { font-size: 11px; color: var(--muted); font-style: italic; margin-top: 4px; }
+
+/* Form elements in modals */
+.form-group { margin-bottom: 14px; }
+.form-label { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; display: block; }
+.form-select, .form-textarea {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 14px;
+  padding: 10px 12px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.form-select:focus, .form-textarea:focus { border-color: var(--accent); }
+.form-textarea { resize: vertical; min-height: 100px; line-height: 1.5; }
+
+/* Generated document display */
+.doc-output {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--text);
+  white-space: pre-wrap;
+  max-height: 300px;
+  overflow-y: auto;
+  font-family: 'Courier New', monospace;
+}
+
 /* ── SCROLLBAR ───────────────────────────── */
 ::-webkit-scrollbar { width: 3px; }
 ::-webkit-scrollbar-track { background: transparent; }
@@ -652,8 +789,16 @@ body {
         <div class="app-subtitle">RAG + Gemini</div>
       </div>
     </div>
-    <div style="display:flex;align-items:center;gap:8px;">
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
       <span class="doc-pill" id="docPill">📄 Doc ready</span>
+      <select id="jurisdictionSelect" onchange="setJurisdiction(this.value)" title="Select jurisdiction" style="background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:5px 8px;font-size:12px;cursor:pointer;outline:none;">
+        <option value="General">🌍 General</option>
+        <option value="Nigeria">🇳🇬 Nigeria</option>
+        <option value="United Kingdom">🇬🇧 UK</option>
+        <option value="United States">🇺🇸 USA</option>
+        <option value="Canada">🇨🇦 Canada</option>
+        <option value="Australia">🇦🇺 Australia</option>
+      </select>
       <button class="new-chat-btn" onclick="createNewChat()" title="New chat">✏️ New Chat</button>
     </div>
   </div>
@@ -672,6 +817,20 @@ body {
         <div>
           <div class="attach-label">Upload PDF Document</div>
           <div class="attach-desc">Ask questions about any legal document</div>
+        </div>
+      </div>
+      <div class="attach-option" onclick="openRiskAnalyser()">
+        <div class="attach-icon" style="background:rgba(239,68,68,0.15);">🔍</div>
+        <div>
+          <div class="attach-label">Analyse Contract Risks</div>
+          <div class="attach-desc">Highlight risky clauses in uploaded document</div>
+        </div>
+      </div>
+      <div class="attach-option" onclick="openDocGenerator()">
+        <div class="attach-icon" style="background:rgba(16,185,129,0.15);">📝</div>
+        <div>
+          <div class="attach-label">Generate Legal Document</div>
+          <div class="attach-desc">Create NDA, demand letter, tenancy agreement & more</div>
         </div>
       </div>
     </div>
@@ -965,7 +1124,7 @@ async function sendMessage() {
     const res = await fetch(`${API_BASE}/ask/stream`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ session_id: currentId, question: text })
+      body: JSON.stringify({ session_id: currentId, question: text, jurisdiction: currentJurisdiction })
     });
 
     hideTyping();
@@ -1187,6 +1346,239 @@ if ('serviceWorker' in navigator && window.location.protocol !== 'file:') {
       .catch(e => console.warn('SW failed:', e));
   });
 }
+</script>
+
+<!-- ── RISK ANALYSER MODAL ───────────────── -->
+<div class="modal-overlay" id="riskModal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">🔍 Contract Risk Analyser</span>
+      <button class="modal-close" onclick="closeRiskModal()">✕</button>
+    </div>
+    <div class="modal-body" id="riskModalBody">
+      <p style="color:var(--muted);font-size:13px;margin-bottom:12px;">
+        Analyses your uploaded document for risky or unfair clauses.
+        Make sure you have uploaded a PDF first.
+      </p>
+      <div id="riskResults"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="modal-btn secondary" onclick="closeRiskModal()">Close</button>
+      <button class="modal-btn primary" id="runAnalysisBtn" onclick="runRiskAnalysis()">🔍 Analyse Now</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── DOCUMENT GENERATOR MODAL ──────────── -->
+<div class="modal-overlay" id="genModal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">📝 Generate Legal Document</span>
+      <button class="modal-close" onclick="closeGenModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Document Type</label>
+        <select class="form-select" id="docTypeSelect">
+          <option value="Non-Disclosure Agreement (NDA)">Non-Disclosure Agreement (NDA)</option>
+          <option value="Demand Letter">Demand Letter</option>
+          <option value="Tenancy Agreement">Tenancy Agreement</option>
+          <option value="Employment Offer Letter">Employment Offer Letter</option>
+          <option value="Freelance Service Agreement">Freelance Service Agreement</option>
+          <option value="Simple Loan Agreement">Simple Loan Agreement</option>
+          <option value="Letter Before Action">Letter Before Action</option>
+          <option value="Privacy Policy">Privacy Policy</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Details</label>
+        <textarea class="form-textarea" id="docDetails" placeholder="Describe the parties involved, key terms, dates, amounts, and any specific requirements..."></textarea>
+      </div>
+      <div id="genOutput" style="display:none;">
+        <label class="form-label">Generated Document</label>
+        <div class="doc-output" id="docOutputText"></div>
+        <button onclick="copyDocument()" style="margin-top:8px;width:100%;padding:10px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);cursor:pointer;font-size:13px;font-weight:600;">📋 Copy Document</button>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="modal-btn secondary" onclick="closeGenModal()">Close</button>
+      <button class="modal-btn primary" id="generateBtn" onclick="generateDocument()">📝 Generate</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── JURISDICTION ──────────────────────────────────────────────
+let currentJurisdiction = "General";
+
+function setJurisdiction(val) {
+  currentJurisdiction = val;
+  // Show confirmation in chat
+  const area = document.getElementById("chatArea");
+  const note = document.createElement("div");
+  note.style.cssText = "text-align:center;font-size:11px;color:var(--muted);padding:4px 0;";
+  note.textContent = `Jurisdiction set to: ${val}`;
+  area.appendChild(note);
+  area.scrollTop = area.scrollHeight;
+}
+
+// ── RISK ANALYSER ─────────────────────────────────────────────
+function openRiskAnalyser() {
+  closeAttach();
+  document.getElementById("riskModal").classList.add("open");
+  document.getElementById("riskResults").innerHTML = "";
+}
+
+function closeRiskModal() {
+  document.getElementById("riskModal").classList.remove("open");
+}
+
+async function runRiskAnalysis() {
+  const btn = document.getElementById("runAnalysisBtn");
+  const results = document.getElementById("riskResults");
+
+  btn.disabled = true;
+  btn.textContent = "⏳ Analysing...";
+  results.innerHTML = '<p style="color:var(--muted);font-size:13px;">Scanning document for risky clauses...</p>';
+
+  try {
+    const res = await fetch(`${API_BASE}/analyse`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ session_id: currentId, jurisdiction: currentJurisdiction })
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      results.innerHTML = `<p style="color:var(--danger);">❌ ${err.detail || "Analysis failed."}</p>`;
+      return;
+    }
+
+    const data = await res.json();
+    renderRiskResults(data);
+
+    // Post summary to chat
+    appendMsg("bot", `🔍 Risk Analysis (${data.jurisdiction}): ${data.summary}`);
+
+  } catch (e) {
+    results.innerHTML = `<p style="color:var(--danger);">❌ Could not reach server.</p>`;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "🔍 Analyse Again";
+  }
+}
+
+function renderRiskResults(data) {
+  const results = document.getElementById("riskResults");
+
+  if (!data.risks || data.risks.length === 0) {
+    results.innerHTML = `
+      <div style="text-align:center;padding:20px;color:var(--success);">
+        <div style="font-size:32px;margin-bottom:8px;">✅</div>
+        <div style="font-weight:600;">No significant risks found</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:4px;">${data.summary}</div>
+      </div>`;
+    return;
+  }
+
+  const high = data.risks.filter(r => r.level === "HIGH").length;
+  const med  = data.risks.filter(r => r.level === "MEDIUM").length;
+  const low  = data.risks.filter(r => r.level === "LOW").length;
+
+  let html = `
+    <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+      ${high ? `<span style="background:rgba(239,68,68,0.15);color:#ef4444;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;">${high} HIGH</span>` : ""}
+      ${med  ? `<span style="background:rgba(245,158,11,0.15);color:#f59e0b;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;">${med} MEDIUM</span>` : ""}
+      ${low  ? `<span style="background:rgba(16,185,129,0.15);color:#10b981;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;">${low} LOW</span>` : ""}
+    </div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:12px;">${data.summary}</p>`;
+
+  for (const risk of data.risks) {
+    html += `
+      <div class="risk-card ${risk.level}">
+        <div class="risk-level">${risk.level} RISK</div>
+        <div class="risk-type">${risk.clause_type}</div>
+        <div class="risk-explanation">${risk.explanation}</div>
+        ${risk.phrase && risk.phrase !== "N/A" ? `<div class="risk-phrase">"${risk.phrase}"</div>` : ""}
+      </div>`;
+  }
+
+  results.innerHTML = html;
+}
+
+// ── DOCUMENT GENERATOR ────────────────────────────────────────
+function openDocGenerator() {
+  closeAttach();
+  document.getElementById("genModal").classList.add("open");
+  document.getElementById("genOutput").style.display = "none";
+  document.getElementById("docOutputText").textContent = "";
+}
+
+function closeGenModal() {
+  document.getElementById("genModal").classList.remove("open");
+}
+
+async function generateDocument() {
+  const docType = document.getElementById("docTypeSelect").value;
+  const details = document.getElementById("docDetails").value.trim();
+  const btn = document.getElementById("generateBtn");
+  const output = document.getElementById("genOutput");
+  const outputText = document.getElementById("docOutputText");
+
+  if (!details) {
+    alert("Please provide details about the document.");
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = "⏳ Generating...";
+  output.style.display = "none";
+
+  try {
+    const res = await fetch(`${API_BASE}/generate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        session_id: currentId,
+        document_type: docType,
+        details: details,
+        jurisdiction: currentJurisdiction
+      })
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      alert("❌ " + (err.detail || "Generation failed."));
+      return;
+    }
+
+    const data = await res.json();
+    outputText.textContent = data.document;
+    output.style.display = "block";
+
+    // Post to chat
+    appendMsg("bot", `📝 ${data.document_type} generated for ${data.jurisdiction}. See the modal to copy it.`);
+
+  } catch (e) {
+    alert("❌ Could not reach server.");
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "📝 Generate";
+  }
+}
+
+function copyDocument() {
+  const text = document.getElementById("docOutputText").textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = event.target;
+    btn.textContent = "✅ Copied!";
+    setTimeout(() => { btn.textContent = "📋 Copy Document"; }, 2000);
+  });
+}
+
+// Patch sendMessage to include jurisdiction
+const _origSendMessage = sendMessage;
+window._sendWithJurisdiction = true;
 </script>
 
 </body>
