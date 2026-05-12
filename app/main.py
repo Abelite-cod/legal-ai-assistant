@@ -34,6 +34,19 @@ app.add_middleware(
 # Include API routes
 app.include_router(routes.router)
 
+# Serve static files (PWA manifest, service worker, icons)
+_static_dir = os.path.join(os.path.dirname(__file__), "static")
+if os.path.exists(_static_dir):
+    app.mount("/static", StaticFiles(directory=_static_dir), name="static")
+
+# Serve service worker at root scope (required for PWA)
+@app.get("/sw.js", include_in_schema=False)
+async def serve_sw():
+    return FileResponse(
+        os.path.join(os.path.dirname(__file__), "static", "sw.js"),
+        media_type="application/javascript"
+    )
+
 # Serve the frontend HTML at root
 @app.get("/", include_in_schema=False)
 async def serve_frontend():

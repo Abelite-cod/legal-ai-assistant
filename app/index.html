@@ -5,6 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
 <title>Legal AI Assistant</title>
 
+<!-- PWA -->
+<link rel="manifest" href="/static/manifest.json" />
+<meta name="theme-color" content="#6366f1" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="LegalAI" />
+
 <style>
 :root {
   --bg: #0b0f19;
@@ -844,6 +852,17 @@ function handleKeyDown(event) {
 function autoResize(el) {
   el.style.height = "auto";
   el.style.height = Math.min(el.scrollHeight, 120) + "px";
+}
+</script>
+
+<script>
+// ── PWA SERVICE WORKER REGISTRATION ──────────────────────────
+if ('serviceWorker' in navigator && window.location.protocol !== 'file:') {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js')
+      .then(reg => console.log('SW registered:', reg.scope))
+      .catch(err => console.warn('SW registration failed:', err));
+  });
 }
 </script>
 
