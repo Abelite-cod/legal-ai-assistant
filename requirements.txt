@@ -9,7 +9,7 @@ langchain==0.3.13
 langchain-community==0.3.13
 langchain-text-splitters==0.3.3
 langchain-huggingface==0.1.2
-langchain-google-genai==2.0.7
+langchain-google-genai==2.1.4
 langchain-chroma==0.1.4
 
 # Vector DB
