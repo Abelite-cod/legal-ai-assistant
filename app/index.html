@@ -5,6 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <title>Legal AI Assistant</title>
 
+<!-- No cache — always serve fresh -->
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+<meta http-equiv="Pragma" content="no-cache" />
+<meta http-equiv="Expires" content="0" />
+
 <!-- PWA -->
 <link rel="manifest" href="/static/manifest.json" />
 <meta name="theme-color" content="#0f0f0f" />
@@ -886,7 +891,7 @@ function appendMsg(role, text, sources = [], save_ = true) {
 
     const msg = document.createElement("div");
     msg.className = "msg bot";
-    msg.textContent = text;
+    msg.innerHTML = formatText(text);
     content.appendChild(msg);
 
     if (sources && sources.length) {
@@ -1040,6 +1045,54 @@ function useQuick(el) {
   input.value = desc.textContent;
   autoResize(input);
   input.focus();
+}
+
+// ── TEXT FORMATTER ────────────────────────────────────────────
+function formatText(text) {
+  // Escape HTML to prevent XSS
+  const escaped = text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+
+  const lines = escaped.split("\n");
+  let html = "";
+  let inList = false;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+
+    if (!line) {
+      if (inList) { html += "</ol>"; inList = false; }
+      html += "<br>";
+      continue;
+    }
+
+    // Numbered list: "1. " or "1) "
+    const numMatch = line.match(/^(\d+)[.)]\s+(.+)/);
+    if (numMatch) {
+      if (!inList) { html += '<ol style="padding-left:18px;margin:6px 0;">'; inList = true; }
+      html += `<li style="margin-bottom:4px;">${numMatch[2]}</li>`;
+      continue;
+    }
+
+    // Bullet: "- " or "• "
+    const bulletMatch = line.match(/^[-•]\s+(.+)/);
+    if (bulletMatch) {
+      if (!inList) { html += '<ul style="padding-left:18px;margin:6px 0;">'; inList = true; }
+      html += `<li style="margin-bottom:4px;">${bulletMatch[1]}</li>`;
+      continue;
+    }
+
+    if (inList) { html += inList === true ? "</ol>" : "</ul>"; inList = false; }
+
+    // Bold: **text**
+    const formatted = line.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+    html += `<p style="margin:4px 0;">${formatted}</p>`;
+  }
+
+  if (inList) html += "</ol>";
+  return html;
 }
 
 // ── HELPERS ───────────────────────────────────────────────────
