@@ -771,34 +771,50 @@ body {
 <!-- ── DRAWER (session history) ───────────── -->
 <div class="drawer" id="drawer">
   <div class="drawer-header">
-    <span class="drawer-title">⚖️ Chat History</span>
+    <span class="drawer-title">⚖️ Legal AI</span>
     <button class="drawer-close" onclick="closeDrawer()">✕</button>
   </div>
+
+  <!-- Jurisdiction selector in drawer -->
+  <div style="padding:10px 12px;border-bottom:1px solid var(--border);">
+    <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:6px;">🌍 Jurisdiction</div>
+    <select id="jurisdictionSelect" onchange="setJurisdiction(this.value)"
+      style="width:100%;background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:13px;cursor:pointer;outline:none;">
+      <option value="General">🌍 General</option>
+      <option value="Nigeria">🇳🇬 Nigeria</option>
+      <option value="United Kingdom">🇬🇧 United Kingdom</option>
+      <option value="United States">🇺🇸 United States</option>
+      <option value="Canada">🇨🇦 Canada</option>
+      <option value="Australia">🇦🇺 Australia</option>
+    </select>
+  </div>
+
   <div class="session-list" id="sessionList"></div>
+
+  <!-- Install App button (shown when PWA installable) -->
+  <div style="padding:12px;border-top:1px solid var(--border);" id="installSection" style="display:none;">
+    <button id="installBtn" onclick="installPWA()"
+      style="width:100%;padding:11px;background:linear-gradient(135deg,#6366f1,#8b5cf6);border:none;border-radius:10px;color:white;font-size:13px;font-weight:600;cursor:pointer;">
+      📲 Install App
+    </button>
+    <div style="font-size:11px;color:var(--muted);text-align:center;margin-top:6px;">Add to your home screen</div>
+  </div>
 </div>
 
 <!-- ── MAIN PANEL ─────────────────────────── -->
 <div class="main-panel">
 
-  <!-- Top bar -->
+  <!-- Top bar — clean, uncluttered -->
   <div class="top-bar">
     <div class="top-bar-left">
-      <button class="menu-btn" onclick="openDrawer()" title="History">☰</button>
+      <button class="menu-btn" onclick="openDrawer()" title="Menu">☰</button>
       <div>
         <div class="app-title">⚖️ Legal AI</div>
-        <div class="app-subtitle">RAG + Gemini</div>
+        <div class="app-subtitle" id="jurisdictionLabel">General Law</div>
       </div>
     </div>
-    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+    <div style="display:flex;align-items:center;gap:8px;">
       <span class="doc-pill" id="docPill">📄 Doc ready</span>
-      <select id="jurisdictionSelect" onchange="setJurisdiction(this.value)" title="Select jurisdiction" style="background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:5px 8px;font-size:12px;cursor:pointer;outline:none;">
-        <option value="General">🌍 General</option>
-        <option value="Nigeria">🇳🇬 Nigeria</option>
-        <option value="United Kingdom">🇬🇧 UK</option>
-        <option value="United States">🇺🇸 USA</option>
-        <option value="Canada">🇨🇦 Canada</option>
-        <option value="Australia">🇦🇺 Australia</option>
-      </select>
       <button class="new-chat-btn" onclick="createNewChat()" title="New chat">✏️ New Chat</button>
     </div>
   </div>
@@ -1413,13 +1429,52 @@ let currentJurisdiction = "General";
 
 function setJurisdiction(val) {
   currentJurisdiction = val;
+
+  // Update subtitle in top bar
+  const label = document.getElementById("jurisdictionLabel");
+  if (label) label.textContent = val === "General" ? "General Law" : val + " Law";
+
   // Show confirmation in chat
   const area = document.getElementById("chatArea");
   const note = document.createElement("div");
   note.style.cssText = "text-align:center;font-size:11px;color:var(--muted);padding:4px 0;";
-  note.textContent = `Jurisdiction set to: ${val}`;
+  note.textContent = `⚖️ Jurisdiction: ${val}`;
   area.appendChild(note);
   area.scrollTop = area.scrollHeight;
+
+  closeDrawer();
+}
+
+// ── PWA INSTALL ───────────────────────────────────────────────
+let _pwaPrompt = null;
+
+window.addEventListener("beforeinstallprompt", (e) => {
+  e.preventDefault();
+  _pwaPrompt = e;
+  // Show install section in drawer
+  const sec = document.getElementById("installSection");
+  if (sec) sec.style.display = "block";
+});
+
+window.addEventListener("appinstalled", () => {
+  _pwaPrompt = null;
+  const sec = document.getElementById("installSection");
+  if (sec) sec.style.display = "none";
+});
+
+function installPWA() {
+  if (_pwaPrompt) {
+    _pwaPrompt.prompt();
+    _pwaPrompt.userChoice.then((result) => {
+      if (result.outcome === "accepted") {
+        console.log("PWA installed");
+      }
+      _pwaPrompt = null;
+    });
+  } else {
+    // Fallback instructions for iOS
+    alert("To install:\n\niPhone: Tap Share → Add to Home Screen\n\nAndroid: Tap menu (⋮) → Add to Home screen");
+  }
 }
 
 // ── RISK ANALYSER ─────────────────────────────────────────────
