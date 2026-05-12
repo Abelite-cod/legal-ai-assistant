@@ -2,63 +2,111 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>Legal AI Chatbot</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+<title>Legal AI Assistant</title>
 
 <style>
 :root {
   --bg: #0b0f19;
   --panel: rgba(255,255,255,0.04);
-  --panel2: rgba(255,255,255,0.06);
+  --panel2: rgba(255,255,255,0.07);
   --border: rgba(255,255,255,0.08);
   --text: #e5e7eb;
   --muted: #9ca3af;
   --accent: #6366f1;
+  --accent2: #8b5cf6;
+  --success: #10b981;
+  --danger: #ef4444;
+  --sidebar-w: 260px;
 }
 
-/* GLOBAL */
-* {
-  box-sizing: border-box;
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  overflow: hidden;
 }
 
 body {
-  margin: 0;
-  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
   background: radial-gradient(circle at top, #111827, #050711);
   color: var(--text);
-  height: 100vh;
   display: flex;
+  position: relative;
 }
 
-/* SIDEBAR */
+/* ── OVERLAY (mobile) ────────────────────── */
+.overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 40;
+  backdrop-filter: blur(2px);
+}
+.overlay.visible { display: block; }
+
+/* ── SIDEBAR ─────────────────────────────── */
 .sidebar {
-  width: 260px;
-  background: var(--panel);
+  width: var(--sidebar-w);
+  min-width: var(--sidebar-w);
+  background: #0d1120;
   border-right: 1px solid var(--border);
-  backdrop-filter: blur(12px);
   display: flex;
   flex-direction: column;
+  transition: transform 0.25s ease;
+  z-index: 50;
+  height: 100vh;
+  flex-shrink: 0;
 }
 
 .sidebar-header {
   padding: 16px;
+  border-bottom: 1px solid var(--border);
 }
+
+.sidebar-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.sidebar-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.close-sidebar {
+  display: none;
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 20px;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 6px;
+  line-height: 1;
+}
+.close-sidebar:hover { color: var(--text); background: var(--panel2); }
 
 .new-chat {
   width: 100%;
-  padding: 12px;
+  padding: 11px;
   border: none;
-  border-radius: 12px;
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  border-radius: 10px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
   color: white;
   font-weight: 600;
+  font-size: 13px;
   cursor: pointer;
   transition: 0.2s;
 }
-
-.new-chat:hover {
-  transform: translateY(-1px);
-  opacity: 0.95;
-}
+.new-chat:hover { opacity: 0.9; }
+.new-chat:active { transform: scale(0.98); }
 
 .chat-list {
   flex: 1;
@@ -72,64 +120,225 @@ body {
   cursor: pointer;
   font-size: 13px;
   color: var(--muted);
+  transition: 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  min-height: 44px;
+}
+.chat-item:hover { background: var(--panel2); color: var(--text); }
+.chat-item.active { background: rgba(99,102,241,0.18); color: white; }
+.chat-item-label { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.delete-btn {
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 14px;
+  padding: 4px 6px;
+  border-radius: 4px;
+  opacity: 0;
+  transition: 0.15s;
+  min-width: 28px;
+  min-height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.chat-item:hover .delete-btn { opacity: 1; }
+.delete-btn:hover { color: var(--danger); background: rgba(239,68,68,0.1); }
+
+/* ── UPLOAD PANEL ────────────────────────── */
+.upload-panel {
+  padding: 12px 16px;
+  border-top: 1px solid var(--border);
+}
+
+.upload-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.upload-zone {
+  border: 1.5px dashed var(--border);
+  border-radius: 10px;
+  padding: 14px 10px;
+  text-align: center;
+  cursor: pointer;
   transition: 0.2s;
+  position: relative;
 }
-
-.chat-item:hover {
-  background: var(--panel2);
-  color: var(--text);
+.upload-zone:hover, .upload-zone.drag-over {
+  border-color: var(--accent);
+  background: rgba(99,102,241,0.06);
 }
-
-.chat-item.active {
-  background: rgba(99,102,241,0.15);
-  color: white;
+.upload-zone input[type="file"] {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+  width: 100%;
+  height: 100%;
 }
+.upload-icon { font-size: 22px; margin-bottom: 4px; }
+.upload-hint { font-size: 11px; color: var(--muted); }
 
-/* MAIN */
+.upload-status {
+  margin-top: 8px;
+  font-size: 12px;
+  border-radius: 6px;
+  padding: 6px 10px;
+  display: none;
+  line-height: 1.4;
+}
+.upload-status.success { background: rgba(16,185,129,0.12); color: var(--success); display: block; }
+.upload-status.error   { background: rgba(239,68,68,0.12);  color: var(--danger);  display: block; }
+.upload-status.loading { background: rgba(99,102,241,0.1);  color: var(--accent);  display: block; }
+
+/* ── MAIN ────────────────────────────────── */
 .chat-container {
   flex: 1;
   display: flex;
   flex-direction: column;
+  min-width: 0;
+  height: 100vh;
 }
 
-/* HEADER */
+/* ── HEADER ──────────────────────────────── */
 .header {
-  padding: 14px 20px;
+  padding: 12px 16px;
   background: var(--panel);
   border-bottom: 1px solid var(--border);
   backdrop-filter: blur(10px);
-  font-weight: 600;
+  font-weight: 700;
+  font-size: 15px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
 }
 
-/* CHAT BOX */
+.hamburger {
+  display: none;
+  background: none;
+  border: none;
+  color: var(--text);
+  font-size: 20px;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 6px;
+  line-height: 1;
+  min-width: 36px;
+  min-height: 36px;
+  align-items: center;
+  justify-content: center;
+}
+.hamburger:hover { background: var(--panel2); }
+
+.header-title { flex: 1; }
+
+.header-badge {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--muted);
+  background: var(--panel2);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 2px 10px;
+  white-space: nowrap;
+}
+
+.doc-badge {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--success);
+  background: rgba(16,185,129,0.1);
+  border: 1px solid rgba(16,185,129,0.2);
+  border-radius: 20px;
+  padding: 2px 10px;
+  display: none;
+  white-space: nowrap;
+}
+.doc-badge.visible { display: inline-block; }
+
+/* ── CHAT BOX ────────────────────────────── */
 .chat-box {
   flex: 1;
   overflow-y: auto;
-  padding: 24px;
+  padding: 20px 16px;
   display: flex;
   flex-direction: column;
   gap: 12px;
+  -webkit-overflow-scrolling: touch;
 }
 
-/* MESSAGES */
+/* Welcome screen */
+.welcome {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  gap: 12px;
+  color: var(--muted);
+  text-align: center;
+  padding: 24px 16px;
+}
+.welcome-icon { font-size: 44px; }
+.welcome h2 { font-size: 18px; color: var(--text); font-weight: 600; }
+.welcome p  { font-size: 13px; max-width: 360px; line-height: 1.6; }
+
+.suggestion-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  margin-top: 8px;
+}
+.chip {
+  padding: 8px 14px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: var(--panel2);
+  color: var(--text);
+  font-size: 12px;
+  cursor: pointer;
+  transition: 0.15s;
+  text-align: left;
+  line-height: 1.4;
+}
+.chip:hover { border-color: var(--accent); background: rgba(99,102,241,0.1); }
+.chip:active { transform: scale(0.97); }
+
+/* ── MESSAGES ────────────────────────────── */
 .message {
   max-width: 720px;
   padding: 12px 14px;
   border-radius: 14px;
   font-size: 14px;
-  line-height: 1.5;
-  animation: fadeIn 0.15s ease-in;
+  line-height: 1.65;
+  animation: fadeIn 0.18s ease-out;
+  word-break: break-word;
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(4px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; transform: translateY(5px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 .user {
-  background: linear-gradient(135deg, #6366f1, #4f46e5);
+  background: linear-gradient(135deg, var(--accent), #4f46e5);
   color: white;
   align-self: flex-end;
+  border-bottom-right-radius: 4px;
+  max-width: 85%;
 }
 
 .bot {
@@ -137,174 +346,505 @@ body {
   border: 1px solid var(--border);
   align-self: flex-start;
   color: var(--text);
+  border-bottom-left-radius: 4px;
+  max-width: 92%;
 }
 
-/* INPUT */
+.sources {
+  margin-top: 8px;
+  font-size: 11px;
+  color: var(--muted);
+  border-top: 1px solid var(--border);
+  padding-top: 6px;
+}
+
+/* Typing indicator */
+.typing-indicator {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 12px 16px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  border-bottom-left-radius: 4px;
+  align-self: flex-start;
+  animation: fadeIn 0.18s ease-out;
+}
+.dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--muted);
+  animation: bounce 1.2s infinite;
+}
+.dot:nth-child(2) { animation-delay: 0.2s; }
+.dot:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes bounce {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.5; }
+  30%            { transform: translateY(-5px); opacity: 1; }
+}
+
+/* ── INPUT BOX ───────────────────────────── */
 .input-box {
-  padding: 16px;
+  padding: 12px 14px;
   border-top: 1px solid var(--border);
   background: var(--panel);
   display: flex;
   gap: 10px;
+  align-items: flex-end;
   backdrop-filter: blur(10px);
+  flex-shrink: 0;
 }
 
-input {
-  flex: 1;
-  padding: 12px 14px;
+.input-wrap { flex: 1; }
+
+textarea {
+  width: 100%;
+  padding: 11px 14px;
   border-radius: 12px;
   border: 1px solid var(--border);
-  background: rgba(0,0,0,0.2);
+  background: rgba(0,0,0,0.25);
   color: white;
   outline: none;
+  font-family: inherit;
+  font-size: 14px;
+  resize: none;
+  min-height: 44px;
+  max-height: 120px;
+  line-height: 1.5;
+  transition: border-color 0.15s;
+  -webkit-appearance: none;
 }
+textarea:focus { border-color: var(--accent); }
+textarea::placeholder { color: var(--muted); }
 
-input:focus {
-  border-color: var(--accent);
-}
-
-button.send {
-  padding: 12px 16px;
+.send-btn {
+  padding: 0 16px;
   border-radius: 12px;
   border: none;
-  background: var(--accent);
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
   color: white;
   cursor: pointer;
+  font-size: 16px;
   transition: 0.2s;
+  height: 44px;
+  min-width: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.send-btn:hover:not(:disabled) { opacity: 0.9; }
+.send-btn:active:not(:disabled) { transform: scale(0.95); }
+.send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* ── SCROLLBAR ───────────────────────────── */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+
+/* ── MOBILE BREAKPOINT ───────────────────── */
+@media (max-width: 640px) {
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    transform: translateX(-100%);
+  }
+
+  .sidebar.open {
+    transform: translateX(0);
+    box-shadow: 4px 0 24px rgba(0,0,0,0.5);
+  }
+
+  .close-sidebar { display: flex; }
+  .hamburger { display: flex; }
+
+  .header-badge { display: none; }
+
+  .chat-box { padding: 14px 12px; }
+
+  .user { max-width: 90%; }
+  .bot  { max-width: 98%; }
+
+  .message { font-size: 13px; }
+
+  .welcome { padding: 20px 12px; }
+  .welcome-icon { font-size: 36px; }
+  .welcome h2 { font-size: 16px; }
+
+  .chip { font-size: 11px; padding: 7px 12px; }
+
+  .input-box { padding: 10px 12px; }
+
+  textarea { font-size: 16px; /* prevents iOS zoom */ }
 }
 
-button.send:hover {
-  transform: translateY(-1px);
-  opacity: 0.9;
+@media (max-width: 380px) {
+  .doc-badge { display: none !important; }
 }
 </style>
 </head>
 
 <body>
 
-<!-- SIDEBAR -->
-<div class="sidebar">
+<!-- Mobile overlay -->
+<div class="overlay" id="overlay" onclick="closeSidebar()"></div>
+
+<!-- ── SIDEBAR ─────────────────────────────── -->
+<div class="sidebar" id="sidebar">
   <div class="sidebar-header">
+    <div class="sidebar-top">
+      <span class="sidebar-title">⚖️ Legal AI</span>
+      <button class="close-sidebar" onclick="closeSidebar()" title="Close">✕</button>
+    </div>
     <button class="new-chat" onclick="createNewChat()">+ New Chat</button>
   </div>
+
   <div id="chatList" class="chat-list"></div>
+
+  <!-- PDF Upload -->
+  <div class="upload-panel">
+    <span class="upload-label">📄 Upload Document</span>
+    <div class="upload-zone" id="uploadZone">
+      <input type="file" accept=".pdf" id="pdfInput" onchange="handleFileSelect(event)" />
+      <div class="upload-icon">📎</div>
+      <div class="upload-hint">Click or drag a PDF here</div>
+    </div>
+    <div class="upload-status" id="uploadStatus"></div>
+  </div>
 </div>
 
-<!-- MAIN -->
+<!-- ── MAIN ───────────────────────────────── -->
 <div class="chat-container">
-  <div class="header">⚖️ Legal AI Assistant</div>
+  <div class="header">
+    <button class="hamburger" onclick="openSidebar()" title="Menu">☰</button>
+    <span class="header-title">⚖️ Legal AI Assistant</span>
+    <span class="header-badge">RAG + Gemini</span>
+    <span class="doc-badge" id="docBadge">📄 Doc loaded</span>
+  </div>
+
   <div id="chatBox" class="chat-box"></div>
 
   <div class="input-box">
-    <input id="messageInput" placeholder="Ask a legal question..." />
-    <button class="send" onclick="sendMessage()">Send</button>
+    <div class="input-wrap">
+      <textarea
+        id="messageInput"
+        placeholder="Ask a legal question..."
+        rows="1"
+        onkeydown="handleKeyDown(event)"
+        oninput="autoResize(this)"
+      ></textarea>
+    </div>
+    <button class="send-btn" id="sendBtn" onclick="sendMessage()" title="Send">➤</button>
   </div>
 </div>
 
 <script>
-const chatBox = document.getElementById("chatBox");
-const chatList = document.getElementById("chatList");
-const input = document.getElementById("messageInput");
+// ── CONFIG ────────────────────────────────────────────────────
+const API_BASE = (window.location.protocol === 'file:')
+  ? 'http://localhost:8000'
+  : window.location.origin;
 
-let chats = JSON.parse(localStorage.getItem("chats")) || {};
+// ── STATE ─────────────────────────────────────────────────────
+let chats = JSON.parse(localStorage.getItem("legalai_chats")) || {};
 let currentChatId = null;
+let isLoading = false;
 
-/* CREATE CHAT */
+// ── SIDEBAR (MOBILE) ──────────────────────────────────────────
+function openSidebar() {
+  document.getElementById("sidebar").classList.add("open");
+  document.getElementById("overlay").classList.add("visible");
+  document.body.style.overflow = "hidden";
+}
+
+function closeSidebar() {
+  document.getElementById("sidebar").classList.remove("open");
+  document.getElementById("overlay").classList.remove("visible");
+  document.body.style.overflow = "";
+}
+
+// ── INIT ──────────────────────────────────────────────────────
+if (Object.keys(chats).length === 0) {
+  createNewChat();
+} else {
+  currentChatId = Object.keys(chats)[0];
+  renderChats();
+  renderMessages();
+}
+
+// ── CHAT MANAGEMENT ───────────────────────────────────────────
 function createNewChat() {
   const id = "chat_" + Date.now();
-  chats[id] = [];
+  chats[id] = { messages: [], title: "New Chat" };
   currentChatId = id;
+  saveChats();
+  renderChats();
+  renderMessages();
+  closeSidebar();
+}
+
+function switchChat(id) {
+  currentChatId = id;
+  renderChats();
+  renderMessages();
+  closeSidebar();
+}
+
+async function removeChat(id, event) {
+  event.stopPropagation();
+  delete chats[id];
+  try { await fetch(`${API_BASE}/sessions/${id}`, { method: "DELETE" }); } catch (_) {}
+
+  if (currentChatId === id) {
+    const remaining = Object.keys(chats);
+    currentChatId = remaining.length > 0 ? remaining[0] : null;
+    if (!currentChatId) createNewChat();
+  }
   saveChats();
   renderChats();
   renderMessages();
 }
 
-/* SWITCH CHAT */
-function switchChat(id) {
-  currentChatId = id;
-  renderChats();
-  renderMessages();
+function saveChats() {
+  localStorage.setItem("legalai_chats", JSON.stringify(chats));
 }
 
-/* RENDER SIDEBAR */
+// ── RENDER ────────────────────────────────────────────────────
 function renderChats() {
+  const chatList = document.getElementById("chatList");
   chatList.innerHTML = "";
-  Object.keys(chats).forEach(id => {
+
+  Object.entries(chats).reverse().forEach(([id, chat]) => {
     const div = document.createElement("div");
-    div.className = "chat-item " + (id === currentChatId ? "active" : "");
-    div.innerText = "Chat " + id.slice(-4);
+    div.className = "chat-item" + (id === currentChatId ? " active" : "");
+
+    const label = document.createElement("span");
+    label.className = "chat-item-label";
+    label.textContent = chat.title || "New Chat";
+
+    const del = document.createElement("button");
+    del.className = "delete-btn";
+    del.textContent = "✕";
+    del.title = "Delete";
+    del.onclick = (e) => removeChat(id, e);
+
+    div.appendChild(label);
+    div.appendChild(del);
     div.onclick = () => switchChat(id);
     chatList.appendChild(div);
   });
 }
 
-/* RENDER MESSAGES */
 function renderMessages() {
+  const chatBox = document.getElementById("chatBox");
   chatBox.innerHTML = "";
-  if (!currentChatId) return;
 
-  chats[currentChatId].forEach(msg => {
-    addMessage(msg.text, msg.sender, false);
-  });
+  if (!currentChatId || !chats[currentChatId]) return;
 
+  const messages = chats[currentChatId].messages;
+
+  if (messages.length === 0) {
+    chatBox.innerHTML = `
+      <div class="welcome">
+        <div class="welcome-icon">⚖️</div>
+        <h2>Legal AI Assistant</h2>
+        <p>Ask legal questions in plain English, upload documents for analysis, or get step-by-step guidance.</p>
+        <div class="suggestion-chips">
+          <div class="chip" onclick="useChip(this)">What are my rights if I was wrongfully terminated?</div>
+          <div class="chip" onclick="useChip(this)">Explain what a non-disclosure agreement does</div>
+          <div class="chip" onclick="useChip(this)">What should I do if my landlord won't return my deposit?</div>
+          <div class="chip" onclick="useChip(this)">What is the difference between civil and criminal law?</div>
+        </div>
+      </div>`;
+    return;
+  }
+
+  messages.forEach(msg => appendMessage(msg.text, msg.sender, msg.sources, false));
   chatBox.scrollTop = chatBox.scrollHeight;
 }
 
-/* ADD MESSAGE */
-function addMessage(text, sender, save=true) {
+// ── MESSAGES ──────────────────────────────────────────────────
+function appendMessage(text, sender, sources = [], save = true) {
+  const chatBox = document.getElementById("chatBox");
+
+  const welcome = chatBox.querySelector(".welcome");
+  if (welcome) welcome.remove();
+
   const div = document.createElement("div");
   div.className = "message " + sender;
-  div.innerText = text;
+  div.textContent = text;
+
+  if (sources && sources.length > 0) {
+    const src = document.createElement("div");
+    src.className = "sources";
+    src.textContent = "📄 Sources: " + sources.join(", ");
+    div.appendChild(src);
+  }
+
   chatBox.appendChild(div);
 
-  if (save) {
-    chats[currentChatId].push({ text, sender });
+  if (save && currentChatId) {
+    chats[currentChatId].messages.push({ text, sender, sources });
+    if (sender === "user" && chats[currentChatId].title === "New Chat") {
+      chats[currentChatId].title = text.slice(0, 36) + (text.length > 36 ? "…" : "");
+      renderChats();
+    }
     saveChats();
   }
 
   chatBox.scrollTop = chatBox.scrollHeight;
 }
 
-/* SAVE */
-function saveChats() {
-  localStorage.setItem("chats", JSON.stringify(chats));
+function showTyping() {
+  const chatBox = document.getElementById("chatBox");
+  const el = document.createElement("div");
+  el.className = "typing-indicator";
+  el.id = "typingIndicator";
+  el.innerHTML = '<div class="dot"></div><div class="dot"></div><div class="dot"></div>';
+  chatBox.appendChild(el);
+  chatBox.scrollTop = chatBox.scrollHeight;
 }
 
-/* SEND MESSAGE */
-async function sendMessage() {
-  const message = input.value.trim();
-  if (!message || !currentChatId) return;
+function hideTyping() {
+  const el = document.getElementById("typingIndicator");
+  if (el) el.remove();
+}
 
-  addMessage(message, "user");
+// ── SEND ──────────────────────────────────────────────────────
+async function sendMessage() {
+  const input = document.getElementById("messageInput");
+  const sendBtn = document.getElementById("sendBtn");
+  const message = input.value.trim();
+
+  if (!message || !currentChatId || isLoading) return;
+
+  isLoading = true;
+  sendBtn.disabled = true;
   input.value = "";
+  autoResize(input);
+
+  appendMessage(message, "user");
+  showTyping();
+
+  // Close sidebar on mobile after sending
+  closeSidebar();
 
   try {
-    const response = await fetch("https://jalisa-unmodish-cousinly.ngrok-free.dev/ask", {
+    const response = await fetch(`${API_BASE}/ask`, {
       method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({
-        session_id: currentChatId,
-        question: message
-      })
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ session_id: currentChatId, question: message })
     });
 
-    const data = await response.json();
-    addMessage(data.answer, "bot");
+    hideTyping();
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      if (response.status === 429) {
+        appendMessage("⏳ The AI is busy right now. Please wait a moment and try again.", "bot");
+      } else {
+        appendMessage("⚠️ " + (err.detail || "Server error. Please try again."), "bot");
+      }
+    } else {
+      const data = await response.json();
+      appendMessage(data.answer, "bot", data.sources || []);
+    }
 
   } catch (err) {
-    addMessage("⚠️ Server error", "bot");
+    hideTyping();
+    appendMessage("⚠️ Could not reach the server. Make sure the backend is running at " + API_BASE, "bot");
+  }
+
+  isLoading = false;
+  sendBtn.disabled = false;
+  input.focus();
+}
+
+// ── PDF UPLOAD ────────────────────────────────────────────────
+async function handleFileSelect(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  await uploadPDF(file);
+}
+
+async function uploadPDF(file) {
+  const status = document.getElementById("uploadStatus");
+  const docBadge = document.getElementById("docBadge");
+
+  status.className = "upload-status loading";
+  status.textContent = "⏳ Indexing " + file.name + "…";
+
+  const formData = new FormData();
+  formData.append("file", file);
+
+  try {
+    const response = await fetch(`${API_BASE}/upload_pdf`, {
+      method: "POST",
+      body: formData
+    });
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      status.className = "upload-status error";
+      status.textContent = "❌ " + (err.detail || "Upload failed.");
+      return;
+    }
+
+    const data = await response.json();
+    status.className = "upload-status success";
+    status.textContent = "✅ Ready! " + file.name;
+    docBadge.classList.add("visible");
+
+    if (currentChatId) {
+      appendMessage(`📄 "${file.name}" uploaded and indexed. You can now ask questions about it.`, "bot");
+    }
+
+  } catch (err) {
+    status.className = "upload-status error";
+    status.textContent = "❌ Upload failed. Is the server running?";
+  }
+
+  document.getElementById("pdfInput").value = "";
+}
+
+// Drag-and-drop
+const uploadZone = document.getElementById("uploadZone");
+uploadZone.addEventListener("dragover", (e) => { e.preventDefault(); uploadZone.classList.add("drag-over"); });
+uploadZone.addEventListener("dragleave", () => uploadZone.classList.remove("drag-over"));
+uploadZone.addEventListener("drop", (e) => {
+  e.preventDefault();
+  uploadZone.classList.remove("drag-over");
+  const file = e.dataTransfer.files[0];
+  if (file && file.type === "application/pdf") uploadPDF(file);
+});
+
+// ── HELPERS ───────────────────────────────────────────────────
+function useChip(el) {
+  const input = document.getElementById("messageInput");
+  input.value = el.textContent;
+  autoResize(input);
+  input.focus();
+  closeSidebar();
+}
+
+function handleKeyDown(event) {
+  // On mobile (touch), Enter should submit. On desktop, Shift+Enter = newline.
+  if (event.key === "Enter" && !event.shiftKey) {
+    // Only auto-submit on desktop (not mobile virtual keyboard)
+    if (window.innerWidth > 640) {
+      event.preventDefault();
+      sendMessage();
+    }
   }
 }
 
-/* INIT */
-if (Object.keys(chats).length === 0) {
-  createNewChat();
-} else {
-  currentChatId = Object.keys(chats)[0];
+function autoResize(el) {
+  el.style.height = "auto";
+  el.style.height = Math.min(el.scrollHeight, 120) + "px";
 }
-
-renderChats();
-renderMessages();
 </script>
 
 </body>

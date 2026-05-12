@@ -1,0 +1,67 @@
+# Python
+
+**pycache**/
+_.py[cod]
+_.pyo
+_.pyd
+.Python
+_.egg-info/
+dist/
+build/
+.eggs/
+
+# Virtual environments
+
+venv/
+.venv/
+env/
+ENV/
+
+# Environment files (never bake secrets into image)
+
+.env
+.env.\*
+!.env.example
+
+# Git
+
+.git/
+.gitignore
+
+# Local data (will be created fresh on Railway)
+
+chroma_db/
+pdfs/
+_.db
+_.sqlite
+\*.sqlite3
+
+# IDE
+
+.vscode/
+.idea/
+_.swp
+_.swo
+
+# OS
+
+.DS_Store
+Thumbs.db
+
+# Logs
+
+\*.log
+logs/
+
+# Test files
+
+tests/
+test\__.py
+_\_test.py
+pytest.ini
+.pytest_cache/
+
+# Docs
+
+\*.md
+!README.md

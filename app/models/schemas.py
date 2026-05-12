@@ -9,4 +9,4 @@ class AskResponse(BaseModel):
     answer: str
     sources: List[str]
     intent_score: float = 0.0
-    
+    confidence: str = "Medium"

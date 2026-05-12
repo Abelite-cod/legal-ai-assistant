@@ -3,6 +3,7 @@ from app.services.context_builder import build_context
 from app.storage.vector_db import load_vectorstore
 from app.storage.pdf_storage import store_pdf
 from app.services.intent_classifier import classify_intent
+from app.services.query_rewriter import rewrite_query
 
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_community.document_loaders import PyPDFLoader
@@ -143,17 +144,42 @@ Rules:
 class GeminiRAGService:
     def __init__(self):
         self.cache: Dict[str, Dict[str, Any]] = {}
+        self._llm = None
+        self._embeddings = None
+        self.vectorstore = None  # loaded lazily on first use
 
-        self.llm = ChatGoogleGenerativeAI(
-            model=LLM_MODEL,
-            temperature=0.2
-        )
+    def _get_llm(self):
+        """Lazy-load the LLM so startup never crashes on missing API key."""
+        if self._llm is None:
+            import os
+            api_key = os.getenv("GOOGLE_API_KEY")
+            if not api_key:
+                raise RuntimeError(
+                    "GOOGLE_API_KEY is not set. Add it to your .env file."
+                )
+            self._llm = ChatGoogleGenerativeAI(
+                model=LLM_MODEL,
+                temperature=0.2
+            )
+        return self._llm
 
-        self.embeddings = HuggingFaceEmbeddings(
-            model_name="sentence-transformers/all-MiniLM-L6-v2"
-        )
+    def _get_embeddings(self):
+        """Lazy-load embeddings model."""
+        if self._embeddings is None:
+            self._embeddings = HuggingFaceEmbeddings(
+                model_name="sentence-transformers/all-MiniLM-L6-v2"
+            )
+        return self._embeddings
 
-        self.vectorstore = load_vectorstore()
+    def _get_vectorstore(self):
+        """Lazy-load vectorstore."""
+        if self.vectorstore is None:
+            self.vectorstore = load_vectorstore()
+        return self.vectorstore
+
+    @property
+    def llm(self):
+        return self._get_llm()
 
     # -------------------------
     # CACHE
@@ -180,12 +206,14 @@ class GeminiRAGService:
 
         chunks = splitter.split_documents(docs)
 
-        if self.vectorstore:
-            self.vectorstore.add_documents(chunks)
+        vs = self._get_vectorstore()
+        if vs:
+            vs.add_documents(chunks)
+            self.vectorstore = vs
         else:
             self.vectorstore = Chroma.from_documents(
                 documents=chunks,
-                embedding=self.embeddings,
+                embedding=self._get_embeddings(),
                 persist_directory=CHROMA_DIR
             )
 
@@ -282,7 +310,13 @@ class GeminiRAGService:
                     "confidence": "Low"
                 }
 
-            retrieved_docs = hybrid_retrieve(question, self.vectorstore)
+            # Rewrite the query for better retrieval
+            try:
+                search_query = rewrite_query(self.llm, question)
+            except Exception:
+                search_query = question  # fallback to original if rewriter fails
+
+            retrieved_docs = hybrid_retrieve(search_query, self.vectorstore)
 
             if not retrieved_docs:
                 return {
