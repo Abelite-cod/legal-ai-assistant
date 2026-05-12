@@ -367,3 +367,87 @@ Question:
             "intent_score": 0.3,
             "confidence": "Medium"
         }
+
+    # -------------------------
+    # STREAMING PIPELINE
+    # -------------------------
+    async def ask_question_stream(
+        self,
+        question: str,
+        history: List[Dict[str, str]] = None
+    ):
+        """
+        Async generator that yields text chunks for streaming responses.
+        Falls back to non-streaming for conversation/greeting intents.
+        """
+        history = history or []
+        intent = classify_intent(question)
+
+        conversation_text = "\n".join(
+            f"{m['role'].upper()}: {m['content']}" for m in history
+        )
+
+        # Quick conversation replies — yield whole string at once
+        convo_reply = handle_conversation(intent, question)
+        if convo_reply:
+            yield convo_reply
+            return
+
+        # Legal reasoning — stream via Gemini
+        if intent in ["legal_question", "emotional_distress"]:
+            prompt = f"""You are a senior legal assistant.
+
+Rules:
+- Be clear and structured
+- Use numbered lists where appropriate
+- Do not use markdown symbols (*, #)
+- Be concise
+
+Conversation:
+{conversation_text}
+
+User:
+{question}
+"""
+            for chunk in self.llm.stream([HumanMessage(content=prompt)]):
+                text = getattr(chunk, "content", "")
+                if text:
+                    # Strip markdown symbols inline
+                    text = re.sub(r"(\*\*|\*|#{1,6}\s*)", "", text)
+                    yield text
+            return
+
+        # Document query — stream after retrieval
+        if intent == "document_query":
+            vs = self._get_vectorstore()
+            if not vs:
+                yield "Please upload a document first."
+                return
+
+            try:
+                search_query = rewrite_query(self.llm, question)
+            except Exception:
+                search_query = question
+
+            retrieved_docs = hybrid_retrieve(search_query, vs)
+            if not retrieved_docs:
+                yield "No relevant information found in the document."
+                return
+
+            trimmed_docs = trim_documents(retrieved_docs)
+            context, _ = build_context(trimmed_docs)
+
+            messages = [
+                SystemMessage(content=SYSTEM_PROMPT),
+                HumanMessage(content=f"Context:\n{context}\n\nQuestion:\n{question}")
+            ]
+
+            for chunk in self.llm.stream(messages):
+                text = getattr(chunk, "content", "")
+                if text:
+                    text = re.sub(r"(\*\*|\*|#{1,6}\s*)", "", text)
+                    yield text
+            return
+
+        # Fallback
+        yield "Could you clarify your question?"

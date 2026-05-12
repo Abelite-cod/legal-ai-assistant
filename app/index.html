@@ -944,7 +944,7 @@ function hideTyping() {
   if (el) el.remove();
 }
 
-// ── SEND MESSAGE ──────────────────────────────────────────────
+// ── SEND MESSAGE (STREAMING) ──────────────────────────────────
 async function sendMessage() {
   const input = document.getElementById("msgInput");
   const sendBtn = document.getElementById("sendBtn");
@@ -962,7 +962,7 @@ async function sendMessage() {
   showTyping();
 
   try {
-    const res = await fetch(`${API_BASE}/ask`, {
+    const res = await fetch(`${API_BASE}/ask/stream`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ session_id: currentId, question: text })
@@ -977,9 +977,76 @@ async function sendMessage() {
       } else {
         appendMsg("bot", "⚠️ " + (err.detail || "Something went wrong. Please try again."));
       }
-    } else {
-      const data = await res.json();
-      appendMsg("bot", data.answer, data.sources || []);
+      busy = false;
+      sendBtn.disabled = false;
+      input.focus();
+      return;
+    }
+
+    // Create bot message bubble for streaming into
+    const area = document.getElementById("chatArea");
+    const welcome = area.querySelector(".welcome");
+    if (welcome) welcome.remove();
+
+    const row = document.createElement("div");
+    row.className = "bot-row";
+
+    const avatar = document.createElement("div");
+    avatar.className = "bot-avatar";
+    avatar.textContent = "⚖";
+
+    const content = document.createElement("div");
+    content.className = "bot-content";
+
+    const msgEl = document.createElement("div");
+    msgEl.className = "msg bot";
+    content.appendChild(msgEl);
+    row.appendChild(avatar);
+    row.appendChild(content);
+    area.appendChild(row);
+
+    // Read SSE stream
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let fullText = "";
+    let buffer = "";
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n");
+      buffer = lines.pop(); // keep incomplete line
+
+      for (const line of lines) {
+        if (!line.startsWith("data: ")) continue;
+        try {
+          const payload = JSON.parse(line.slice(6));
+
+          if (payload.error) {
+            msgEl.innerHTML = formatText("⚠️ " + payload.error);
+            break;
+          }
+
+          if (payload.chunk) {
+            fullText += payload.chunk;
+            msgEl.innerHTML = formatText(fullText);
+            area.scrollTop = area.scrollHeight;
+          }
+
+          if (payload.done) {
+            // Save to local storage
+            if (currentId) {
+              chats[currentId].messages.push({ role: "bot", text: fullText, sources: payload.sources || [] });
+              if (chats[currentId].title === "New Chat" && fullText) {
+                // title already set from user message
+              }
+              save();
+            }
+          }
+        } catch (_) {}
+      }
     }
 
   } catch (err) {
@@ -1057,13 +1124,17 @@ function formatText(text) {
 
   const lines = escaped.split("\n");
   let html = "";
-  let inList = false;
+  let listType = null; // "ol" or "ul" or null
 
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i].trim();
+  const closeList = () => {
+    if (listType) { html += `</${listType}>`; listType = null; }
+  };
+
+  for (const rawLine of lines) {
+    const line = rawLine.trim();
 
     if (!line) {
-      if (inList) { html += "</ol>"; inList = false; }
+      closeList();
       html += "<br>";
       continue;
     }
@@ -1071,27 +1142,27 @@ function formatText(text) {
     // Numbered list: "1. " or "1) "
     const numMatch = line.match(/^(\d+)[.)]\s+(.+)/);
     if (numMatch) {
-      if (!inList) { html += '<ol style="padding-left:18px;margin:6px 0;">'; inList = true; }
-      html += `<li style="margin-bottom:4px;">${numMatch[2]}</li>`;
+      if (listType !== "ol") { closeList(); html += '<ol style="padding-left:20px;margin:6px 0 6px 0;">'; listType = "ol"; }
+      html += `<li style="margin-bottom:5px;line-height:1.5;">${numMatch[2]}</li>`;
       continue;
     }
 
     // Bullet: "- " or "• "
     const bulletMatch = line.match(/^[-•]\s+(.+)/);
     if (bulletMatch) {
-      if (!inList) { html += '<ul style="padding-left:18px;margin:6px 0;">'; inList = true; }
-      html += `<li style="margin-bottom:4px;">${bulletMatch[1]}</li>`;
+      if (listType !== "ul") { closeList(); html += '<ul style="padding-left:20px;margin:6px 0 6px 0;">'; listType = "ul"; }
+      html += `<li style="margin-bottom:5px;line-height:1.5;">${bulletMatch[1]}</li>`;
       continue;
     }
 
-    if (inList) { html += inList === true ? "</ol>" : "</ul>"; inList = false; }
+    closeList();
 
     // Bold: **text**
     const formatted = line.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
-    html += `<p style="margin:4px 0;">${formatted}</p>`;
+    html += `<p style="margin:5px 0;line-height:1.6;">${formatted}</p>`;
   }
 
-  if (inList) html += "</ol>";
+  closeList();
   return html;
 }
 

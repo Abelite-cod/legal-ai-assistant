@@ -1,9 +1,10 @@
 import os
 from fastapi import APIRouter, UploadFile, File, Depends, HTTPException
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from app.models.schemas import AskRequest, AskResponse
 from app.services.rag_service import GeminiRAGService
 from app.utils.session_manager import get_history, add_message, get_all_sessions, delete_session
+import json
 
 router = APIRouter()
 rag_service = GeminiRAGService()
@@ -67,7 +68,8 @@ async def ask_endpoint(
     if not session_id or not question:
         raise HTTPException(status_code=400, detail="Missing session_id or question.")
 
-    history = get_history(session_id)
+    # Only send last 6 messages to LLM — keeps prompts short and fast
+    history = get_history(session_id)[-6:]
     add_message(session_id, "user", question)
 
     try:
@@ -89,6 +91,52 @@ async def ask_endpoint(
     add_message(session_id, "assistant", result["answer"])
 
     return result
+
+
+# ─────────────────────────────────────────
+# STREAMING ASK
+# ─────────────────────────────────────────
+@router.post("/ask/stream")
+async def ask_stream(
+    request: AskRequest,
+    rag_service: GeminiRAGService = Depends(get_rag_service)
+):
+    """Stream the AI response token-by-token using Server-Sent Events."""
+    session_id = request.session_id
+    question = request.question.strip()
+
+    if not session_id or not question:
+        raise HTTPException(status_code=400, detail="Missing session_id or question.")
+
+    history = get_history(session_id)[-6:]
+    add_message(session_id, "user", question)
+
+    async def event_stream():
+        full_answer = ""
+        try:
+            async for chunk in rag_service.ask_question_stream(question=question, history=history):
+                full_answer += chunk
+                yield f"data: {json.dumps({'chunk': chunk})}\n\n"
+
+            # Send done signal with sources
+            yield f"data: {json.dumps({'done': True, 'sources': []})}\n\n"
+            add_message(session_id, "assistant", full_answer)
+
+        except Exception as e:
+            err = str(e)
+            if "429" in err or "RESOURCE_EXHAUSTED" in err:
+                yield f"data: {json.dumps({'error': 'Rate limited. Please wait and try again.'})}\n\n"
+            else:
+                yield f"data: {json.dumps({'error': 'An error occurred. Please try again.'})}\n\n"
+
+    return StreamingResponse(
+        event_stream(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+        }
+    )
 
 
 # ─────────────────────────────────────────
