@@ -86,14 +86,29 @@ def trim_documents(docs, max_chars=MAX_CONTEXT_CHARS):
 # -------------------------
 # CONVERSATION HANDLER
 # -------------------------
+import datetime as _dt
+import random as _random
+
+_GREETINGS = [
+    "Hey 👋 I'm your legal assistant. What legal matter can I help you with today?",
+    "Hello! I'm here to help with legal questions, document analysis, and guidance. What's on your mind?",
+    "Hi there! Ready to help with any legal questions or documents. How can I assist?",
+]
+
+_SMALL_TALK = [
+    "I'm doing great, thanks for asking! 😊 I'm ready to help with any legal questions or documents you have.",
+    "All good on my end! I'm here whenever you need legal guidance or document analysis.",
+    "Doing well! I'm your legal AI — ask me anything about law, contracts, or your documents.",
+]
+
 def handle_conversation(intent: str, question: str) -> Optional[str]:
     q = normalize(question)
 
-    if intent == "greeting" and len(q.split()) <= 3:
-        return "Hey 👋 I’m your legal assistant. How can I help you today?"
+    if intent == "greeting" and len(q.split()) <= 4:
+        return _random.choice(_GREETINGS)
 
     if intent == "small_talk":
-        return "I'm here to help with legal questions or documents."
+        return _random.choice(_SMALL_TALK)
 
     return None
 
@@ -102,14 +117,14 @@ def handle_conversation(intent: str, question: str) -> Optional[str]:
 # LEGAL REASONING (CLEAN + NO REPETITION)
 # -------------------------
 def handle_legal_reasoning(llm, question: str, history: str = "") -> str:
-    prompt = f"""
-You are a senior legal assistant.
+    today = _dt.date.today().strftime("%A, %B %d, %Y")
+    prompt = f"""You are a senior legal assistant. Today's date is {today}.
 
 Rules:
-- Be clear and structured
+- Be clear and structured with numbered steps where appropriate
 - Do not repeat phrases
 - Do not use markdown symbols (*, #)
-- Be concise
+- Be concise and practical
 
 Conversation:
 {history}
@@ -123,17 +138,19 @@ User:
 
 
 # -------------------------
-# SYSTEM PROMPT
+# SYSTEM PROMPT (dynamic — injects real date)
 # -------------------------
-SYSTEM_PROMPT = """
-You are a legal document assistant.
+import datetime as _dt
+
+def _build_system_prompt() -> str:
+    today = _dt.date.today().strftime("%A, %B %d, %Y")
+    return f"""You are a legal document assistant. Today's date is {today}.
 
 Rules:
-- Be empathetic, practical and clean plain text
-- Use ONLY provided context
-- Never hallucinate
-- If missing info say:
-  The document does not contain this information.
+- Be empathetic, practical and use clean plain text
+- Use ONLY the provided document context
+- Never hallucinate facts
+- If information is missing say: The document does not contain this information.
 - Do not use markdown symbols like ** or #
 """
 
@@ -330,7 +347,7 @@ class GeminiRAGService:
             context, sources = build_context(trimmed_docs)
 
             messages = [
-                SystemMessage(content=SYSTEM_PROMPT),
+                SystemMessage(content=_build_system_prompt()),
                 HumanMessage(content=f"""
 Context:
 {context}
@@ -438,7 +455,7 @@ User:
             context, _ = build_context(trimmed_docs)
 
             messages = [
-                SystemMessage(content=SYSTEM_PROMPT),
+                SystemMessage(content=_build_system_prompt()),
                 HumanMessage(content=f"Context:\n{context}\n\nQuestion:\n{question}")
             ]
 
