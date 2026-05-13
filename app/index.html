@@ -1299,14 +1299,19 @@ function formatText(text) {
 
   const lines = escaped.split("\n");
   let html = "";
-  let listType = null; // "ol" or "ul" or null
+  let listType = null;
+  let stepNum = 0; // track manual step counter for heading-style numbered items
 
   const closeList = () => {
     if (listType) { html += `</${listType}>`; listType = null; }
   };
 
-  for (const rawLine of lines) {
-    const line = rawLine.trim();
+  const inlineFmt = (s) => s
+    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+    .replace(/\*(.+?)\*/g, "<em>$1</em>");
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
 
     if (!line) {
       closeList();
@@ -1314,27 +1319,48 @@ function formatText(text) {
       continue;
     }
 
-    // Numbered list: "1. " or "1) "
+    // Numbered heading: "1. Title" where next non-empty line is body text (not another number)
     const numMatch = line.match(/^(\d+)[.)]\s+(.+)/);
     if (numMatch) {
-      if (listType !== "ol") { closeList(); html += '<ol style="padding-left:20px;margin:6px 0 6px 0;">'; listType = "ol"; }
-      html += `<li style="margin-bottom:5px;line-height:1.5;">${numMatch[2]}</li>`;
+      const num = parseInt(numMatch[1]);
+      const title = numMatch[2];
+
+      // Peek ahead: if next non-empty line is NOT a numbered item, treat as heading+body
+      let nextNonEmpty = "";
+      for (let j = i + 1; j < lines.length; j++) {
+        if (lines[j].trim()) { nextNonEmpty = lines[j].trim(); break; }
+      }
+      const nextIsNumber = /^\d+[.)]\s/.test(nextNonEmpty);
+      const nextIsBullet = /^[-•]\s/.test(nextNonEmpty);
+
+      if (!nextIsNumber && !nextIsBullet && nextNonEmpty) {
+        // Heading-style: render as numbered section card
+        closeList();
+        html += `<div style="margin:10px 0 4px 0;">
+          <span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;background:var(--accent);color:white;border-radius:50%;font-size:11px;font-weight:700;margin-right:8px;flex-shrink:0;vertical-align:middle;">${num}</span>
+          <strong style="font-size:14px;color:var(--text);">${inlineFmt(title)}</strong>
+        </div>`;
+        continue;
+      }
+
+      // Simple inline numbered list
+      if (listType !== "ol") { closeList(); html += '<ol style="padding-left:20px;margin:6px 0;">'; listType = "ol"; }
+      html += `<li style="margin-bottom:5px;line-height:1.5;">${inlineFmt(title)}</li>`;
       continue;
     }
 
     // Bullet: "- " or "• "
     const bulletMatch = line.match(/^[-•]\s+(.+)/);
     if (bulletMatch) {
-      if (listType !== "ul") { closeList(); html += '<ul style="padding-left:20px;margin:6px 0 6px 0;">'; listType = "ul"; }
-      html += `<li style="margin-bottom:5px;line-height:1.5;">${bulletMatch[1]}</li>`;
+      if (listType !== "ul") { closeList(); html += '<ul style="padding-left:20px;margin:6px 0;">'; listType = "ul"; }
+      html += `<li style="margin-bottom:5px;line-height:1.5;">${inlineFmt(bulletMatch[1])}</li>`;
       continue;
     }
 
     closeList();
 
-    // Bold: **text**
-    const formatted = line.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
-    html += `<p style="margin:5px 0;line-height:1.6;">${formatted}</p>`;
+    // Body text — indent slightly if it follows a numbered heading
+    html += `<p style="margin:3px 0 8px 30px;line-height:1.65;color:var(--text);">${inlineFmt(line)}</p>`;
   }
 
   closeList();
