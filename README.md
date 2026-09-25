@@ -2,7 +2,7 @@
 
 A production-ready, full-stack AI legal assistant with RAG, streaming responses, contract risk analysis, legal document generation, and multi-jurisdiction support.
 
-**Live Demo:** [legal-assistant.up.railway.app](https://legal-assistant.up.railway.app)
+**Live Demo:** [legal-ai-assistant-kmk3.onrender.com](https://legal-ai-assistant-kmk3.onrender.com)
 
 ---
 
@@ -69,7 +69,7 @@ SQLite Session Storage
 ### Infrastructure
 
 - **Docker** — containerised deployment
-- **Railway** — cloud hosting with auto-deploy from GitHub
+- **Render** — cloud hosting with auto-deploy from GitHub
 - **Uvicorn** — ASGI server
 
 ---
@@ -185,12 +185,13 @@ Open **http://localhost:8000**
 
 ---
 
-## 🚀 Deploy to Railway
+## 🚀 Deploy to Render
 
 1. Fork this repo
-2. Go to [railway.app](https://railway.app) → New Project → Deploy from GitHub
-3. Add environment variables: `GOOGLE_API_KEY` and `DATABASE_URL`
-4. Railway auto-builds from the `Dockerfile` and deploys
+2. Go to [render.com](https://render.com) → New → Web Service → connect your GitHub repo
+3. Render auto-detects the `render.yaml` and configures the service
+4. Add environment variable: `GOOGLE_API_KEY` in the Render dashboard
+5. Render auto-builds from the `Dockerfile` and deploys
 
 ---
 
